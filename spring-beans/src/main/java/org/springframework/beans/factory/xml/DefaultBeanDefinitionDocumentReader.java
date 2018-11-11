@@ -98,7 +98,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		this.readerContext = readerContext;
 		logger.debug("Loading bean definitions");
 		Element root = doc.getDocumentElement();
-		//XXX 开始真正解析
+		//XXXX 开始真正解析
 		doRegisterBeanDefinitions(root);
 	}
 
@@ -324,11 +324,15 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * and registering it with the registry.
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+	    //1.进行元素解析, bdHolder中已经包含在配置文件中的各种属性了: class,name,id,alias
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
+		    //2.存在默认标签的子节点下再有自定义属性, 需要再次对自定义标签进行解析
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
+                //3.解析完成后, 需要对解析后的bdHolder进行注册,同样,注册操作委托给
+                //BeanDefinitionReaderUtils的registerBeanDefinition方法
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {
@@ -336,6 +340,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						bdHolder.getBeanName() + "'", ele, ex);
 			}
 			// Send registration event.
+            //4. 发出响应时间,通知相关的监听器,这个bean已经加载完成了
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
 	}

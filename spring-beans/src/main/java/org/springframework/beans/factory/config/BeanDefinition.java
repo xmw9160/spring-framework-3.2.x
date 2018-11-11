@@ -22,7 +22,7 @@ import org.springframework.core.AttributeAccessor;
 
 /**
  * A BeanDefinition describes a bean instance, which has property values,
- * constructor argument values, and further information supplied by
+ * constructor argument values, and FURTHER information supplied by
  * concrete implementations.
  *
  * <p>This is just a minimal interface: The main intention is to allow a
