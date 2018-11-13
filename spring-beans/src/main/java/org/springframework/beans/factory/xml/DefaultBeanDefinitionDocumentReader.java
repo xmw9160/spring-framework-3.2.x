@@ -212,7 +212,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
 			processAliasRegistration(ele);
 		}
-		// bean 最复杂最重要
+		//XXX bean 最复杂最重要
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
 			processBeanDefinition(ele, delegate);
 		}
@@ -320,6 +320,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	}
 
 	/**
+     * XXX processBeanDefinition
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
 	 */
@@ -328,6 +329,14 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
 		    //2.存在默认标签的子节点下再有自定义属性, 需要再次对自定义标签进行解析
+            /**
+             * <bean id="test" class="test.MyClass">
+             *     <mybean:user username="aaa"/>
+             * </bean>
+             * 当spring中的bean使用的是默认标签配置,但是其中的子元素却使用了自定义的配置时,
+             * 执行decorateBeanDefinitionIfRequired()
+             * 对默认标签直接略过
+             */
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
