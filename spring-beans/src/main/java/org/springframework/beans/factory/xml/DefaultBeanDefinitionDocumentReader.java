@@ -187,13 +187,13 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				if (node instanceof Element) {
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
-					    // 对bean的处理
+					    // 对bean的处理(默认标签)
                         // <bean id="beanName" class="" />  手动注入
                         // import, alias, bean, beans解析
 						parseDefaultElement(ele, delegate);
 					} else {
-                        // 对bean的处理
-                        // <tx:annotation-driven>  注解驱动注入
+                        // 对bean的处理(自定义标签解析入口)
+                        // <tx:annotation-driven> 注解驱动注入???
 						delegate.parseCustomElement(ele);
 					}
 				}

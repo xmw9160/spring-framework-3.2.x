@@ -56,6 +56,8 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 	public static final String NAME_ATTRIBUTE = "name";
 
 	public final BeanDefinition parse(Element element, ParserContext parserContext) {
+	    // 解析
+        // org.springframework.beans.factory.xml.AbstractSingleBeanDefinitionParser.parseInternal()
 		AbstractBeanDefinition definition = parseInternal(element, parserContext);
 		if (definition != null && !parserContext.isNested()) {
 			try {
@@ -70,9 +72,12 @@ public abstract class AbstractBeanDefinitionParser implements BeanDefinitionPars
 				if (StringUtils.hasLength(name)) {
 					aliases = StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(name));
 				}
+				// 将AbstractBeanDefinition转换为BeanDefinitionHolder并注册
 				BeanDefinitionHolder holder = new BeanDefinitionHolder(definition, id, aliases);
+				// 注册
 				registerBeanDefinition(holder, parserContext.getRegistry());
 				if (shouldFireEvents()) {
+				    // 需要通知监听器并进行处理
 					BeanComponentDefinition componentDefinition = new BeanComponentDefinition(holder);
 					postProcessComponentDefinition(componentDefinition);
 					parserContext.registerComponent(componentDefinition);

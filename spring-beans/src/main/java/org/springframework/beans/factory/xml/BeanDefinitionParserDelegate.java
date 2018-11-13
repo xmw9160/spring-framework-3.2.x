@@ -1529,13 +1529,17 @@ public class BeanDefinitionParserDelegate {
 		return parseCustomElement(ele, null);
 	}
 
+	// containingBd 为父类的Bean, 对顶层元素的解析应该设置为null
 	public BeanDefinition parseCustomElement(Element ele, BeanDefinition containingBd) {
+	    // 获取对应的命名空间
 		String namespaceUri = getNamespaceURI(ele);
+		// 根据命名空间找到对应的NamespaceHandler
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		// 调用自定义的NamespaceHandler进行解析
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 
