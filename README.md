@@ -1,4 +1,3 @@
-* 《Spring 源码深度解析》学习
 ## 02-容器得基本实现
 ##### 1. 加载bean
 ```java
@@ -6,31 +5,32 @@ BeanFactory bf = new XmlBeanFactory(new ClassPathResource("beanFactoryTest.xml")
 MyTestBean bean = (MyTestBean)bf.getBean("myTestBean")
 ```
 
->*ConfigReader: 用于读取及验证配置文件
-*ReflectionUtil: 用于根据配置文件中的配置进行反射实例化
-*app: 完成整个逻辑的串联
+>*ConfigReader: 用于读取及验证配置文件  
+*ReflectionUtil: 用于根据配置文件中的配置进行反射实例化  
+*app: 完成整个逻辑的串联  
 
 #### 2. 核心类介绍
 * DefaultListableBeanFactory
 > XmlBeanFactory继承自DefaultListableBeanFactory, 而DefaultListableBeanFactory是整个bean加载的核心部分, 是Spring注册及加载bean的默认实现, 而对于XmlBeanFactory与DefaultListableBeanFactory不同的地方其实是XmlBeanFactory中使用了自定义的Xml读取器XmlBeanDefinitionReader, 实现了个性化的BeanDefinitionReader读取, DefaultListableBeanFactory继承了AbstractAutowireCapableBeanFactory并实现了ConfigurableListableBeanFactory以及BeanDefinitionRegistry接口.
 * `DefaultListableBeanFactory`类图
 
-> 1.`AliasRegistry`：定义对alias的简单增删改等操作
-2.`SimpleAliasRegistry`：主要使用map作为alias的缓存，并对接口AliasRegistry进行实现
-3.`SigletonBeanRegistry`：定义对单例bean的注册及获取
-4.`BeanFactory`：定义获取bean及bean的各种属性
-5.`DefaultSingletonBeanRegistry`：对接口SigletonBeanRegistry各函数的实现
-6.`HierarchicalBeanFactory`：继承BeanFactory，也就是在BeanFactory定义的功能基础上增加了对parentFactory的支持
-7.`BeanDefinitionRegistry`：定义对BeanDefinition的各种增删改操作
-8.`FactoryBeanRegistrySupport`：在DefaultSingletonBeanRegistry基础上增加了对FactoryBean的特殊处理功能
-9.`ConfigurableBeanFactory`：提供配置Factory的各种方法
-10.`ListableBeanFactory`：根据各种条件获取bean的配置清单
-11.`AbstractBeanFactory`：综合FactoryBeanRegistrySupport和ConfigurableBeanFactory的功能
-12.`AutowireCapableBeanFactory`：提供创建bean、自动注入、初始化以及应用bean的后处理器
-13.`AbstractAtuowireCapableBeanFactory`：综合AbstractBeanFactory并对接口AutowireCapableBeanFactory进行实现
-14.`ConfigurableListableBeanFactory`：BeanFactory配置清单，指定忽略类型及接口等
-15.`DefaultListableBeanFactory`：综合上面所有功能，主要是对Bean注册后的处理
-* `XmlBeanFactory`对`DefaultListableBeanFactory`类进行了扩展，主要用于从XML文档中读取BeanDefinition，对于注册及获取Bean都是使用从父类DefaultListbaleBeanFactory继承的方法去实现，而唯独与父类不同的个性化方法就是增加了`XmlBeanDefinitionReader`类型的reader属性，在XmlBeanFactory中主要使用reader属性对资源文件进行读取和注册。
+>
+1.`AliasRegistry`：定义对alias的简单增删改等操作  
+2.`SimpleAliasRegistry`：主要使用map作为alias的缓存，并对接口AliasRegistry进行实现  
+3.`SigletonBeanRegistry`：定义对单例bean的注册及获取  
+4.`BeanFactory`：定义获取bean及bean的各种属性  
+5.`DefaultSingletonBeanRegistry`：对接口SigletonBeanRegistry各函数的实现  
+6.`HierarchicalBeanFactory`：继承BeanFactory，也就是在BeanFactory定义的功能基础上增加了对parentFactory的支持  
+7.`BeanDefinitionRegistry`：定义对BeanDefinition的各种增删改操作  
+8.`FactoryBeanRegistrySupport`：在DefaultSingletonBeanRegistry基础上增加了对FactoryBean的特殊处理功能  
+9.`ConfigurableBeanFactory`：提供配置Factory的各种方法  
+10.`ListableBeanFactory`：根据各种条件获取bean的配置清单  
+11.`AbstractBeanFactory`：综合FactoryBeanRegistrySupport和ConfigurableBeanFactory的功能  
+12.`AutowireCapableBeanFactory`：提供创建bean、自动注入、初始化以及应用bean的后处理器  
+13.`AbstractAtuowireCapableBeanFactory`：综合AbstractBeanFactory并对接口AutowireCapableBeanFactory进行实现  
+14.`ConfigurableListableBeanFactory`：BeanFactory配置清单，指定忽略类型及接口等  
+15.`DefaultListableBeanFactory`：综合上面所有功能，主要是对Bean注册后的处理  
+* `XmlBeanFactory`对`DefaultListableBeanFactory`类进行了扩展，主要用于从XML文档中读取BeanDefinition，对于注册及获取Bean都是使用从父类DefaultListbaleBeanFactory继承的方法去实现，而唯独与父类不同的个性化方法就是增加了`XmlBeanDefinitionReader`类型的reader属性，在XmlBeanFactory中主要使用reader属性对资源文件进行读取和注册。  
 
 * `DefaultListableBeanFactory` 完成对通过beanName的注册.
 > 通过beanName注册: org.springframework.beans.factory.support.DefaultListableBeanFactory#registerBeanDefinition
