@@ -70,6 +70,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 	}
 
 
+	// Bean实例化之前,通过aware接口获取一些对应的资源
 	public Object postProcessBeforeInitialization(final Object bean, String beanName) throws BeansException {
 		AccessControlContext acc = null;
 

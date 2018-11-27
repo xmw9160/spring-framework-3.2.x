@@ -130,12 +130,14 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	 * @throws BeansException if context creation failed
 	 * @see #refresh()
 	 */
+	//XXXX 使用ApplicationContext方式加载XML
 	public ClassPathXmlApplicationContext(String[] configLocations, boolean refresh, ApplicationContext parent)
 			throws BeansException {
 
 		super(parent);
 		setConfigLocations(configLocations);
 		if (refresh) {
+		    // refresh函数几乎包含了ApplicationContext中提供的所有功能
 			refresh();
 		}
 	}
