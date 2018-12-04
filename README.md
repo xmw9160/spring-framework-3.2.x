@@ -133,3 +133,52 @@ public class CarFactoryBean inplements FactoryBena<Car> {
 `org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory#initializeBean(java.lang.String, java.lang.Object, org.springframework.beans.factory.support.RootBeanDefinition)`
 * 5.7.5 注册DisposableBean
 `org.springframework.beans.factory.support.AbstractBeanFactory#registerDisposableBeanIfNecessary()`
+
+### 06-容器的功能扩展
+##### ApplicationContext和BeanFactory两者都是用于加载bean的, 但相比之下, ApplicationContext提供了更多的扩展功能, 简单一点就是ApplicationContext包含了BeanFactory的所有功能.
+* 入口
+```java
+ApplicationContext bf = new ClassPathXmlApplicationContext("beanFactoryTest.xml")
+```
+##### 6.1 设置配置路径
+* `org.springframework.context.support.AbstractRefreshableConfigApplicationContext#setConfigLocations(String location)`
+##### 6.2 功能扩展
+* refresh函数几乎包含了ApplicationContext中提供的所有功能
+`org.springframework.context.support.AbstractApplicationContext#refresh()`
+##### 6.3 环境准备
+`org.springframework.context.support.AbstractApplicationContext#prepareRefresh()`
+##### 6.4 加载BeanFactory
+* `org.springframework.context.support.AbstractApplicationContext#obtainFreshBeanFactory()`  
+        * 委托处理 `org.springframework.context.support.AbstractRefreshableApplicationContext#refreshBeanFactory()`
+        * `DefaultListableBeanFactory`是容器的基础
+* 6.4.1 定制BeanFactory
+    * `org.springframework.context.support.AbstractRefreshableApplicationContext#customizeBeanFactory(DefaultListableBeanFactory beanFactory)`
+* 6.4.2 加载BeanDefinition
+    * `org.springframework.context.support.AbstractXmlApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)`
+##### 6.5 功能扩展
+* `org.springframework.context.support.AbstractApplicationContext#prepareBeanFactory()`
+    * 增加SPEL语言的支持
+    * 增加属性祖册编辑器
+        * 使用自定义属性编辑器,通过继承`PropertyEditorSupport`, 重写setAsText方法.
+        * 通过注册Spring自带的属性编辑器`CustomDateEditor`.
+        * `org.springframework.beans.PropertyEditorRegistrySupport#createDefaultEditors()` 注册了一系列常用的属性编辑器.
+##### 6.6 激活注册BeanFactoryPostProcessor
+* `BeanFactoryPostProcessor`接口跟`BeanPostProcessor`类似, 可以对bean的定义(配置元数据)进行处理. 也就是说, Spring IoC容器允许`BeanFactoryPostProcessor`在容器实际实例化任何其他bean之前读取配置元数据, 并有可能修改它.
+> 1.如果想改变实际的bean实例(例如从配置元数据创建的对象), 最好使用`BeanPostProcessor`.
+2.`BeanFactoryPostProcessor`的作用域范围是容器级别的, 它只和你所使用的容器有关.
+3.在Spring中存在对于`BeanFactoryPostProcessor`的典型应用, 比如`PropertyPlaceholderConfigurer`.
+##### 6.7 初始化非延迟加载单例
+* `org.springframework.context.support.AbstractApplicationContext#finishBeanFactoryInitialization()`
+* `ApplicationContext`实现的默认行为就是在启动时将所有单例bean提前进行实例化. 提前实例化意味着作为初始化过程的一部分, `ApplicationContext`实例会创建并配置所有的单例bean.
+##### 6.8 finishRefresh
+* 在Spring中提供了`LifeCycle`接口, `LifeCycle`中包含`start/stop`方法, 实现此接口后Spring会保证在启动的时候调用其`start`方法开始其生命周期, 并在`Spring`关闭的时候调用`stop`方法来结束生命周期, 通常用来配置后台程序, 在启动后一直运行(如对MQ进行轮询).
+* `org.springframework.context.support.AbstractApplicationContext#finishRefresh()`
+
+### 07-AOP
+* Spring 2.0采用`@AspectJ`注解对POJO进行标注, 从而定义一个包含切点信息和增强横切逻辑的切面.
+* `@AspectJ`注解使用AspectJ切点表达式语法进行切点定义, 可以通过切点函数、运算符、通配符等高级功能进行切点定义,拥有强大的连接点描述能力(方法级别).
+##### 7.2 动态AOP自定义标签
+* `org.springframework.aop.config.AopNamespaceHandler#init()`. 在解析配置文件的时候,一旦遇到`aspectj-autoproxy`注解时就会使用`AspectJAutoProxyBeanDefinitionParser`进行解析.
+* 所有解析器, 因为是对`BeanDefinitionParser`接口的统一实现, 所以入口都是从parse函数开始的.
+    * 注册`AnnotationAwareAspectJAutoProxyCreartor`
+    * 对于`AOP`的实现, 基本上都是靠`AnnotationAwareAspectJAutoProxyCreator` 去完成, 它可以根据`@Point`注解定义的切点来自动代理相匹配的bean.

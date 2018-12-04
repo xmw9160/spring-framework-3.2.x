@@ -319,8 +319,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 	 */
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		if (bean != null) {
+		    // 根据给定的bean饿class和name构建出key, 格式: beanClassName_beanName
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (!this.earlyProxyReferences.containsKey(cacheKey)) {
+			    // 如果它适合被代理, 则需要封装指定bean
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -346,21 +348,28 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+	    // 如果已经处理过
 		if (beanName != null && this.targetSourcedBeans.containsKey(beanName)) {
 			return bean;
 		}
+		// 无须增强
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// 给定的bean类是否代表一个基础设施类,基础设施类不应代理,或者配置了指定bean不需要自动代理
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+        // 如果存在增强方法则创建代理
+        // AbstractAdvisorAutoProxyCreator.getAdvicesAndAdvisorsForBean
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
+		// 如果获取到了增强则需要针对增强创建代理
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			//XXX 创建代理
 			Object proxy = createProxy(bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());
 			return proxy;
@@ -452,30 +461,39 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 
 		ProxyFactory proxyFactory = new ProxyFactory();
 		// Copy our properties (proxyTargetClass etc) inherited from ProxyConfig.
+        // 获取当前类中相关属性
 		proxyFactory.copyFrom(this);
 
+		// 决定对于给定的bean是否应该使用targetClass而不是他的接口代理
+        // 检查proxyTargetClass设置以及preserveTargetClass属性
 		if (!shouldProxyTargetClass(beanClass, beanName)) {
 			// Must allow for introductions; can't just set interfaces to
 			// the target's interfaces only.
 			Class<?>[] targetInterfaces = ClassUtils.getAllInterfacesForClass(beanClass, this.proxyClassLoader);
 			for (Class<?> targetInterface : targetInterfaces) {
+			    // 添加接口代理
 				proxyFactory.addInterface(targetInterface);
 			}
 		}
 
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		for (Advisor advisor : advisors) {
+		    // 加入增强器
 			proxyFactory.addAdvisor(advisor);
 		}
 
+		// 设置要代理的类
 		proxyFactory.setTargetSource(targetSource);
+		// 定制代理
 		customizeProxyFactory(proxyFactory);
 
+		// 用来控制代理工厂被配置后, 是否还允许修改通知
+        // 缺省值为false(即在代理被配置之后, 不允许修改代理的配置)
 		proxyFactory.setFrozen(this.freezeProxy);
 		if (advisorsPreFiltered()) {
 			proxyFactory.setPreFiltered(true);
 		}
-
+		//XXXX 代理的创建与获取
 		return proxyFactory.getProxy(this.proxyClassLoader);
 	}
 
@@ -520,12 +538,14 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 	 */
 	protected Advisor[] buildAdvisors(String beanName, Object[] specificInterceptors) {
 		// Handle prototypes correctly...
+        // 解析注册所有interceptorName
 		Advisor[] commonInterceptors = resolveInterceptorNames();
 
 		List<Object> allInterceptors = new ArrayList<Object>();
 		if (specificInterceptors != null) {
 			allInterceptors.addAll(Arrays.asList(specificInterceptors));
 			if (commonInterceptors != null) {
+			    // 加入拦截器
 				if (this.applyCommonInterceptorsFirst) {
 					allInterceptors.addAll(0, Arrays.asList(commonInterceptors));
 				}
@@ -543,6 +563,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 
 		Advisor[] advisors = new Advisor[allInterceptors.size()];
 		for (int i = 0; i < allInterceptors.size(); i++) {
+		    // 拦截器进行封装转为为Advisor
+            // DefaultAdvisorAdapterRegistry.wrap
 			advisors[i] = this.advisorAdapterRegistry.wrap(allInterceptors.get(i));
 		}
 		return advisors;
