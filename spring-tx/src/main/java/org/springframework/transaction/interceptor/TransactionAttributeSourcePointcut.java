@@ -33,7 +33,9 @@ import org.springframework.util.ObjectUtils;
 abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPointcut implements Serializable {
 
 	public boolean matches(Method method, Class targetClass) {
+	    // 自定义标签解析时注入
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		//XX AbstractFallbackTransactionAttributeSource.getTransactionAttribute
 		return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
 	}
 

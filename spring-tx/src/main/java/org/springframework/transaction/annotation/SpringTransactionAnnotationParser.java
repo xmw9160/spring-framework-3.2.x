@@ -38,6 +38,7 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement ae) {
 		Transactional ann = AnnotationUtils.getAnnotation(ae, Transactional.class);
 		if (ann != null) {
+		    //XXXX 解析Transactional注解的属性
 			return parseTransactionAnnotation(ann);
 		}
 		else {
@@ -47,27 +48,36 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 
 	public TransactionAttribute parseTransactionAnnotation(Transactional ann) {
 		RuleBasedTransactionAttribute rbta = new RuleBasedTransactionAttribute();
+		// 解析propagation
 		rbta.setPropagationBehavior(ann.propagation().value());
+		// 解析isolation
 		rbta.setIsolationLevel(ann.isolation().value());
+		// 解析timeout
 		rbta.setTimeout(ann.timeout());
+		// 解析readOnly
 		rbta.setReadOnly(ann.readOnly());
+		// 解析value
 		rbta.setQualifier(ann.value());
 		ArrayList<RollbackRuleAttribute> rollBackRules = new ArrayList<RollbackRuleAttribute>();
+		// 解析rollbackFor
 		Class[] rbf = ann.rollbackFor();
 		for (Class rbRule : rbf) {
 			RollbackRuleAttribute rule = new RollbackRuleAttribute(rbRule);
 			rollBackRules.add(rule);
 		}
+		// 解析rollbackForClassName
 		String[] rbfc = ann.rollbackForClassName();
 		for (String rbRule : rbfc) {
 			RollbackRuleAttribute rule = new RollbackRuleAttribute(rbRule);
 			rollBackRules.add(rule);
 		}
+		// 解析noRollbackFor
 		Class[] nrbf = ann.noRollbackFor();
 		for (Class rbRule : nrbf) {
 			NoRollbackRuleAttribute rule = new NoRollbackRuleAttribute(rbRule);
 			rollBackRules.add(rule);
 		}
+		// 解析noRollbackForClassName
 		String[] nrbfc = ann.noRollbackForClassName();
 		for (String rbRule : nrbfc) {
 			NoRollbackRuleAttribute rule = new NoRollbackRuleAttribute(rbRule);

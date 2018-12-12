@@ -319,10 +319,10 @@ public abstract class AbstractAutoProxyCreator extends ProxyConfig
 	 */
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		if (bean != null) {
-		    // 根据给定的bean饿class和name构建出key, 格式: beanClassName_beanName
+		    // 根据给定的bean的class和name构建出key, 格式: beanClassName_beanName
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
 			if (!this.earlyProxyReferences.containsKey(cacheKey)) {
-			    // 如果它适合被代理, 则需要封装指定bean
+			    //XX 如果它适合被代理, 则需要封装指定bean
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}

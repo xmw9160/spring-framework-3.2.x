@@ -209,6 +209,8 @@ public abstract class AopUtils {
 			return false;
 		}
 
+		// 此时的pc表示TransactionAttributeSourcePointcut
+        // pc.getMethodMatcher()返回的正是自身(this)
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
@@ -222,6 +224,7 @@ public abstract class AopUtils {
 			for (Method method : methods) {
 				if ((introductionAwareMethodMatcher != null &&
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions)) ||
+                        //XX TransactionAttributeSourcePointcut.matches()
 						methodMatcher.matches(method, targetClass)) {
 					return true;
 				}
@@ -259,6 +262,7 @@ public abstract class AopUtils {
 		}
 		else if (advisor instanceof PointcutAdvisor) {
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
+			//XX
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
 		else {
@@ -282,7 +286,7 @@ public abstract class AopUtils {
 		List<Advisor> eligibleAdvisors = new LinkedList<Advisor>();
 		// 首先处理引介增强
 		for (Advisor candidate : candidateAdvisors) {
-		    // canApply() 真正的匹配实现
+		    //XX canApply() 真正的匹配实现
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}

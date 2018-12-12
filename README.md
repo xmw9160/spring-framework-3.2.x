@@ -182,3 +182,48 @@ ApplicationContext bf = new ClassPathXmlApplicationContext("beanFactoryTest.xml"
 * 所有解析器, 因为是对`BeanDefinitionParser`接口的统一实现, 所以入口都是从parse函数开始的.
     * 注册`AnnotationAwareAspectJAutoProxyCreartor`
     * 对于`AOP`的实现, 基本上都是靠`AnnotationAwareAspectJAutoProxyCreator` 去完成, 它可以根据`@Point`注解定义的切点来自动代理相匹配的bean.
+    
+## 10-Spring事务
+##### 10.1事务使用示例
+* 默认情况下Spring中的事务处理只对`RuntimeException`方法进行回滚, 所以将RuntimeException替换成普通的Exception不会产生回滚效果.
+##### 10.2 事务自定义标签
+* `org.springframework.transaction.config.TxNamespaceHandler#init()`对`annotation-driven`进行处理.
+* `org.springframework.transaction.config.AnnotationDrivenBeanDefinitionParser`对`<annotation-driven>`进行解析.
+* 事务属性的获取规则
+    * `org.springframework.transaction.interceptor.AbstractFallbackTransactionAttributeSource#computeTransactionAttribute()`
+    * 如果方法中存在事务属性,则使用方法上的属性, 否则使用方法所在类上的属性, 如果方法所在类的属性上还是没有搜索到对应的事务属性, 那么再搜索接口中的方法, 再没有的话, 最后尝试搜索接口的类上面的生命.
+##### 10.3 事务增强器
+* `TransactionInterceptor` 支撑着整个事务功能的架构, 实现了事务的特性.
+    * `TransactionInterceptor`继承自`MethodInteceptor`, `invoke()`事务处理重心.
+* 创建事务
+    * `org.springframework.transaction.interceptor.TransactionAspectSupport#createTransactionIfNecessary()`
+    * 获取事务`org.springframework.transaction.support.AbstractPlatformTransactionManager#getTransaction`
+    * `org.springframework.jdbc.datasource.DataSourceTransactionManager#doBegin`, 设置隔离级别, 更改自动提交... 
+    * `PROPAGATION_REQUIRES_NEW` 表示当前方法必须在它自己的事务里面运行, 一个新的事务将被启动, 而如果有一个事务正在运行的话, 则在这个方法运行期间将被挂起. 而Spring中对此种传播方式的处理与新事务建立最大的不同点在于使用`suspend`方法将原事务挂起, 将信息挂起的目的是为了在当前事务执行完毕后再将原事务还原(CPU上下文切换).
+    * `PROPAGATION_NESTED` 表示如果当前正有一个事务在运行中, 则该方法应该运行在一个嵌套的事务中, 别嵌套的事务可以独立于封装事务进行提交或者回滚(内嵌事务异常不会引起外部事务的回滚), 如果封装事务不存在, 行为就像`PROPAGATION_REQUIRES_NEW`. 对于嵌套式事务的处理, Spring中主要考虑了两种处理方式.
+        * Spring中允许嵌入式事务的时候, 则首选设置保存点的方式作为异常处理的回滚.
+        * 对于其他方式, 比如JTA无法使用保存点的方式, 那么处理方式与`PROPAGATION_REQUIRES_NEW`相同, 而一旦出现异常, 则由Spring的事务异常处理机制去完成后续操作. 
+* 回滚处理
+    * `org.springframework.transaction.interceptor.TransactionAspectSupport#completeTransactionAfterThrowing`
+    * 回滚条件. 
+        * 默认回滚条件(`DefaultTransactionAttribute#rollbackOn`): `ex instanceof RuntimeException || ex instanceof Error`. 使用`@Transaction(rollbackFor=Exception.class)` 对一般异常进行回滚, -->>`RuleBasedTransactionAttribute#rollbackOn`.
+    * 回滚处理.
+        * `org.springframework.transaction.support.AbstractPlatformTransactionManager#rollback()`
+        * 回滚会触发`TransactionSynchronization`中对应的方法, **使用这一点可以实现事务正常/异常执行后进行其他处理**.
+```java
+TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter() {
+    @Override
+    public void afterCommit() {
+        execute();
+    }
+});
+```
+* 事务提交
+    * `org.springframework.transaction.interceptor.TransactionAspectSupport#commitTransactionAfterReturning()`
+    * `org.springframework.transaction.support.AbstractPlatformTransactionManager#commit`
+    * 在事务异常处理规则的时候, 当某个事务既没有保存点又不是新事务, Spring对它的处理方式只是设置一个`回滚标识`. 这里的`回滚标识`应用场景为: 某个事务是另一个事务的嵌入事务, 但是这些事务又不在Spring的管理范围内, 或者无法设置保存点, 那么Spring会通过设置`回滚标识`的方式来禁止提交. 首先当某个嵌入事务发生回滚的时候会设置`回滚标识`, 而等到外部事务提交时, 一旦判断当前事务流被设置了`回滚标识`, 则由外部事务来统一进行整体事务的回滚. 所以, 当事务没有被异常捕获的时候也并不意味着一定会执行提交的过程.
+    * 提交过程中需要考虑一下两个条件
+        * 当事务状态中有保存点信息的话不会去提交事务
+        * 当事务非新事务饿时候也不会去执行提交事务的操作
+        * 以上条件主要考虑内嵌事务的情况, 对于内嵌事务, 在Spring中正常的处理方式是`将内嵌事务开始之前设置保存点, 一点内嵌事务出现异常便根据保存点信息进行回滚`, 但是如果`没有出现异常, 内嵌事务并不会单独提交, 而是根据事务流由最外层事务负责提交`, 所以如果当前存在保存点信息便不是最外层事务, 不做保存操作, 对于是否是新事务饿判断也是基于此考虑.
+    * 最终提交由底层数据库连接执行, `org.springframework.jdbc.datasource.DataSourceTransactionManager#doCommit()`
