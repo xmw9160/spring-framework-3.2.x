@@ -450,14 +450,23 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
+	    //(1)初始化MultipartResolver: 处理上传文件
 		initMultipartResolver(context);
+        //(2)初始化LocaleResolver: 国际化配置
 		initLocaleResolver(context);
+        //(3)初始化ThemeResolver: 初始化主题解析器
 		initThemeResolver(context);
+        //(4)初始化HandlerMappings
 		initHandlerMappings(context);
+        //(5)初始化HandlerAdapters
 		initHandlerAdapters(context);
+        //(6)初始化HandlerExceptionResolvers
 		initHandlerExceptionResolvers(context);
+        //(7)初始化RequestToViewNameTranslator
 		initRequestToViewNameTranslator(context);
+        //(8)初始化ViewResolvers: 视图解析渲染
 		initViewResolvers(context);
+        //(9)初始化FlashMapManager: Spring MVC Flash attributes提供了一个存储属性, 可供其他请求使用
 		initFlashMapManager(context);
 	}
 
@@ -597,6 +606,10 @@ public class DispatcherServlet extends FrameworkServlet {
 		// Ensure we have at least some HandlerAdapters, by registering
 		// default HandlerAdapters if no other adapters are found.
 		if (this.handlerAdapters == null) {
+		    // HttpRequestHandlerAdapter: 主要应用在基于HTTP的远程调用的实现上
+            // SimpleControllerHandlerAdapter: 将HTTP请求适配到一个控制器的实现进行处理
+            // AnnotationMethodHandlerAdapter: 通过解析声明在注解控制器的请求映射信息来解析
+            // 相应的处理器方法来处理当前的HTTP请求
 			this.handlerAdapters = getDefaultStrategies(context, HandlerAdapter.class);
 			if (logger.isDebugEnabled()) {
 				logger.debug("No HandlerAdapters found in servlet '" + getServletName() + "': using default");
@@ -838,6 +851,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Keep a snapshot of the request attributes in case of an include,
 		// to be able to restore the original attributes after the include.
+        // 保存请求参数快照
 		Map<String, Object> attributesSnapshot = null;
 		if (WebUtils.isIncludeRequest(request)) {
 			attributesSnapshot = new HashMap<String, Object>();
@@ -864,6 +878,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		request.setAttribute(FLASH_MAP_MANAGER_ATTRIBUTE, this.flashMapManager);
 
 		try {
+		    // 执行真正的请求处理流程 Process the actual dispatching to the handler.
 			doDispatch(request, response);
 		}
 		finally {
@@ -899,20 +914,27 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+			    //XX 如果是MultipartContent类型的request则转换request为
+                //MultipartHttpServletRequest类型的request
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+                //XX 根据request信息寻找对应的handler
 				mappedHandler = getHandler(processedRequest, false);
 				if (mappedHandler == null || mappedHandler.getHandler() == null) {
+				    //XX 如果没有找到对应的handler则通过response反馈错误信息:404
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+                //XX 根据当前的handler寻找对应的HandlerAdapter
+                // 默认情况下普通的Web请求会交给SimpleControllerHandlerAdapter去处理
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
+                // 获取当前handler支持的last-modified头处理
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
@@ -925,23 +947,29 @@ public class DispatcherServlet extends FrameworkServlet {
 					}
 				}
 
+				//XX 拦截器调用处理
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+                //XX 真正的激活handler并返回视图
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
 
+				//XX 视图名称转换应用于需要添加前后缀的情况
 				applyDefaultViewName(request, mv);
+
+				//XX 应用所有拦截器的postHandle方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
 				dispatchException = ex;
 			}
+			//XX 处理结果包括异常处理
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -991,13 +1019,16 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
+				//XX 处理异常
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
 		}
 
 		// Did the handler return a view to render?
+        // 如果在handler实例的处理中返回view, 那么需要做页面的处理
 		if (mv != null && !mv.wasCleared()) {
+		    //XX 处理页面跳转
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
@@ -1016,6 +1047,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		if (mappedHandler != null) {
+		    // 完成处理激活触发器
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}
 	}
@@ -1193,6 +1225,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		View view;
 		if (mv.isReference()) {
 			// We need to resolve the view name.
+            // 解析视图名称
 			view = resolveViewName(mv.getViewName(), mv.getModelInternal(), locale, request);
 			if (view == null) {
 				throw new ServletException("Could not resolve view with name '" + mv.getViewName() +
@@ -1213,6 +1246,8 @@ public class DispatcherServlet extends FrameworkServlet {
 			logger.debug("Rendering view [" + view + "] in DispatcherServlet with name '" + getServletName() + "'");
 		}
 		try {
+		    // 视图渲染，页面跳转
+            // AbstractView.render()
 			view.render(mv.getModelInternal(), request, response);
 		}
 		catch (Exception ex) {
@@ -1252,6 +1287,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			HttpServletRequest request) throws Exception {
 
 		for (ViewResolver viewResolver : this.viewResolvers) {
+		    // AbstractCachingViewResolver.resolveViewName()
 			View view = viewResolver.resolveViewName(viewName, locale);
 			if (view != null) {
 				return view;

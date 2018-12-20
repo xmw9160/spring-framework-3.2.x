@@ -120,11 +120,18 @@ public abstract class HttpServletBean extends HttpServlet
 
 		// Set bean properties from init parameters.
 		try {
+		    //XX 解析init-param并封装至pvs中, 封装及验证初始化参数
 			PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
+			// 将当前的这个Servlet类转化为一个BeanWrapper,
+            // 从而能够以Spring的方式来对init-param的值进行诸如
+            // BeanWrapper为Spring中的方法, 支持Spring的自动注入
 			BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
 			ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
+			// 注册自定义属性编辑器, 一旦遇到Resource类型的属性将会使用ResourceEditor进行解析
 			bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));
+			// 空实现, 留个子类覆盖
 			initBeanWrapper(bw);
+			// 属性注入
 			bw.setPropertyValues(pvs, true);
 		}
 		catch (BeansException ex) {
@@ -133,6 +140,7 @@ public abstract class HttpServletBean extends HttpServlet
 		}
 
 		// Let subclasses do whatever initialization they like.
+        // 留给子类扩展 FrameworkServlet.initServletBean()
 		initServletBean();
 
 		if (logger.isDebugEnabled()) {
@@ -226,6 +234,7 @@ public abstract class HttpServletBean extends HttpServlet
 		 * we can't accept default values
 		 * @throws ServletException if any required properties are missing
 		 */
+		// 封装属性已经对属性进行验证
 		public ServletConfigPropertyValues(ServletConfig config, Set<String> requiredProperties)
 			throws ServletException {
 

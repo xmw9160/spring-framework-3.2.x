@@ -259,8 +259,11 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 				" and static attributes " + this.staticAttributes);
 		}
 
+		//XX JSTL 属性解析
 		Map<String, Object> mergedModel = createMergedOutputModel(model, request, response);
 		prepareResponse(request, response);
+		//XX 处理页面跳转
+        // InternalResourceView.renderMergedOutputModel
 		renderMergedOutputModel(mergedModel, request, response);
 	}
 

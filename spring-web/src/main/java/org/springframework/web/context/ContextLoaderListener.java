@@ -109,6 +109,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 		if (this.contextLoader == null) {
 			this.contextLoader = this;
 		}
+		//XXXX 初始化WebApplicationContext
 		this.contextLoader.initWebApplicationContext(event.getServletContext());
 	}
 

@@ -227,3 +227,65 @@ TransactionSynchronizationManager.registerSynchronization(new TransactionSynchro
         * 当事务非新事务饿时候也不会去执行提交事务的操作
         * 以上条件主要考虑内嵌事务的情况, 对于内嵌事务, 在Spring中正常的处理方式是`将内嵌事务开始之前设置保存点, 一点内嵌事务出现异常便根据保存点信息进行回滚`, 但是如果`没有出现异常, 内嵌事务并不会单独提交, 而是根据事务流由最外层事务负责提交`, 所以如果当前存在保存点信息便不是最外层事务, 不做保存操作, 对于是否是新事务饿判断也是基于此考虑.
     * 最终提交由底层数据库连接执行, `org.springframework.jdbc.datasource.DataSourceTransactionManager#doCommit()`
+    
+### 11-SpringMVC
+* Spring的MVC是基于Servlet功能实现的, 通过实现Servlet接口的DispatcherServlet来封装其核心功能实现, 通过将请求分派给处理程序, 同时带有可配置的处理程序映射、视图映射、本地语言、主题解析以及上载文件支持。
+* Spring MVC的实现原理是通过Servlet拦截所有URL来达到控制的目的的，所以web.xm的配置是必须的。
+##### 11.2 ContextLoaderListener
+* `ContextLoaderListener`的作用就是穷Web容器时, 自动装配`ApplicationContext`的配置信息。因为它实现了`ServletContextListener`这个接口, 在`web.xml`配置这个监听器, 自动启动容器时, 就会默认执行她实现的方法, 使用`ServletContextListener`接口, 开发者能够在为客户端请求提供服务之前向`ServletContext`中添加任意对象. 这个对象在`ServletContext`启动的时候被初始化, 然后在`ServletContext`整个运行期间都是可见的.
+* 每一个Web应用都有一个ServletContext与之想关联. `ServletContext`对象在应用启动时被创建, 在应用关闭的时候被销毁.  `ServletContext`在全局范围内有效, 类似于应用中的一个全局变量.
+* 在`ServletContextListener`中的核心逻辑便是初始化`WebApplicationContext`实例并放至`ServletContext`中.
+* ServletContextListener的使用
+* Spring中的ContextLoaderListener
+    * `ServletContext`启动后会调用`ServletContextLoader`的`contextInitialized()`方法.
+    * `WebApplicationContext`继承自`ApplicationContext`, 在`ApplicationContext`的基础上又追加了一些特定于Web的操作及属性, 非常类似于通过编程方式使用Spring时使用的`ClassPathXMLApplicationContext`类提供的功能.
+##### 11.3 DispatcherServlet
+* `Servlet`是一个按照Java编写的程序, 此程序是基于Http协议的, 在服务器端运行的(如Tomcat), 是按照`Servelt`规范编写的一个Java类. 主要是处理客户端的请求并将其结果发送到客户端. `servlet`的生命周期是有`servelt`的容器来控制的, 它可以分为3个阶段: 初始化、运行和销毁：
+    * 初始化阶段
+        * servlet容器加载servlet类， 把servlet类的.class文件中的数据读取到内存中
+        * servlet容器创建一个`servletConfig`对象。`ServletConfig`对象包含了servlet的初始化配置信息
+        * servlet容器创建一个servlet对象
+        * servlet容器调用servlet对象的init方法进行初始化
+    * 运行阶段
+        * 当`servlet`容器接收到一个请求时, servlet容器会针对这个请求创建servletRequest和servletResponse对象, 然后调用`service`方法, 并把这两个参数传递给service方法. service方法通过`servletRequest`对象获取请求信息,. 并处理该请求. 再通过`servletResponse`对象生成这个请求的响应结果. 然后销毁`servletRequest`和`servletResponse`对象. 不管这个请求是post提交还是get提交, 最终这个请求都会由`service`方法来处理.
+    * 销毁阶段
+        * 当Web应用被终止时, `servlet`容器会先调用servlet对象的`destory`方法, 然后再销毁`servlet`对象, 同时也会销毁与`servlet`对象相关联的`serviceConfig`对象.
+* servlet的框架由两个java包组成: javax.servlet和javax.servlet.http.
+    * `javax.servlet`包中定义了所有的servlet类都必须实现或扩展的通用接口和类.
+    * `javax.servlet.http`包中定义了采用HTTP协议通信的`HttpServlet`类.
+        * HTTP的请求方式包括delete、get、options、post、put和trace,在`HttpServlet`类中分别提供了相应的服务方法, 他们是doDelete()、doGet()、doOptions()、doPost()、doPut()和doTrace().
+* Servlet的使用
+* DispatcherServlet的初始化
+    * `DispatcherServlet`的初始化过程主要是通过当前的servlet类型实例转换为`BeanWrapper`类型实例, 以便使用Spring提供的注入功能进行对应的属性注入. `DispatcherServlet`继承自`FrameworkServlet`, `FrameworkServlet`类中包含对应的同名属性, Spring会保证这些参数被注入到对应的值中.
+    * `org.springframework.web.servlet.DispatcherServlet#initStrategies()` Initialize the strategy objects that this servlet uses.
+##### 11.4 DispatcherServlet的逻辑处理
+* `org.springframework.web.servlet.FrameworkServlet#processRequest()`
+* `org.springframework.web.servlet.DispatcherServlet#doDispatch()` 函数中展示了Spring请求处理所涉及的主要逻辑.
+* 11.4.1 MultipartContent 类型的request处理
+    * `org.springframework.web.servlet.DispatcherServlet#checkMultipart()` 对于请求的处理, 首先考虑多MultipartContent类型的request进行处理.
+* 11.4.2 根据request信息寻找对应的handler
+    * `org.springframework.web.servlet.DispatcherServlet#getHandler()` --> `org.springframework.web.servlet.handler.AbstractHandlerMapping#getHandler()` 将hander封装成HandlerExecutionChain.
+    * eg: `org.springframework.web.servlet.handler.SimpleUrlHandlerMapping`.  --> `org.springframework.web.servlet.handler.AbstractHandlerMapping#getHandler()` --> `org.springframework.web.servlet.handler.AbstractUrlHandlerMapping#getHandlerInternal()`. 链处理机制是Spring中非常常用的处理方式, 是AOP中重要的组成部分, 可以方便的对目标对象进行扩展及拦截.
+    * `**org.springframework.web.servlet.handler.AbstractUrlHandlerMapping**` 需要debug
+* 11.4.3 没有找到对应的Handler的错误处理
+    * `org.springframework.web.servlet.DispatcherServlet#noHandlerFound()` 默认在response中返回404
+* 11.4.4 根据当前的Handler寻找对应的HandlerAdapter
+    * `org.springframework.web.servlet.DispatcherServlet#getHandlerAdapter()` 默认使用`org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter()`
+* 11.4.5 缓存处理
+    * `org.springframework.web.servlet.HandlerAdapter#getLastModified()` Spring判断是否过期, 通过判断请求的"If-Modified-Since"是否大于等于当前的getLastModified方法的时间戳, 如果是, 则认为没有修改.
+* 11.4.6 HandlerInterceptor的处理
+    * Servlet API定义的servlet过滤器可以在servlet处理每个Web请求的前后分别对它进行前置处理和后置处理.
+    * SpringMVC允许通过处理拦截Web请求, 进行前置处理和后置处理. 处理拦截是在Spring的Web应用程序的上下文中配置的, 因此它们可以利用各种容器特性, 并引用容器中声明的任何bean. 
+    * 处理拦截是针对特殊的处理程序映射进行注册的, 因此它只拦截通过这些处理程序映射的请求.
+    * 每个处理拦截都必须实现`HandlerInterceptor`接口, 它包含三个需要实现的回调方法: 
+        * `preHandler`: 处理请求前调用, 这个方法应该返回`true`, 允许`DispatcherServlet`继续处理请求. 否则, `DispatcherServlet`会认为这个方法已经处理了请求, 直接响应返回给用户.
+        * `postHandler`: 处理请求后调用, 徐云访问返回的ModelAndView对象, 因此可以在它里面操作模型属性.
+        * `afterComplation`: 所有请求处理完成之后被调用(如视图呈现之后). 
+* 11.4.7 逻辑处理
+    * `org.springframework.web.servlet.handler.SimpleServletHandlerAdapter#handle()` --> `org.springframework.web.servlet.mvc.AbstractController#handleRequest()`
+* 11.4.8 异常视图的处理
+    * 这里Spring主要的工作就是将逻辑引导至`HandlerExceptionResolver`类的resolveException方法处理.
+    * `org.springframework.web.servlet.DispatcherServlet#processHandlerException()` 
+* 11.4.9 根据视图跳转页面
+    * 在逻辑处理的最后一定会涉及一个页面跳转的问题
+    * `org.springframework.web.servlet.DispatcherServlet#processDispatchResult()` --> `render()`.

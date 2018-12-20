@@ -205,6 +205,7 @@ public class InternalResourceView extends AbstractUrlBasedView {
 		HttpServletRequest requestToExpose = getRequestToExpose(request);
 
 		// Expose the model object as request attributes.
+        // 将model中的数据以属性的方式设置到request中
 		exposeModelAsRequestAttributes(model, requestToExpose);
 
 		// Expose helpers as request attributes, if any.
